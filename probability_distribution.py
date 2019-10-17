@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
 import util
 
 
-def build_model(debug=False):
-    option_chain = util.get_dummy_option_data()
-
+def build_model(option_chain: pd.DataFrame, debug=False) -> np.ndarray:
     # PUTS
     puts = option_chain[['strike_price', 'put_price']].dropna()
     p_below = 0.02  # Guess for probability of stock being below lowest strike put
@@ -33,6 +33,7 @@ def build_model(debug=False):
         call_probabilities.append(p_above)
         i -= 2
     call_probabilities.reverse()
+    return np.array(put_probabilities + call_probabilities) * 100
 
 
 def calc_put_prob(puts: pd.DataFrame, p_below: float, short_index: int, long_index: int, debug=False) -> float:
@@ -87,5 +88,20 @@ def calc_call_prob(calls: pd.DataFrame, p_above: float, long_index: int, short_i
     return p_between
 
 
+def plot_pd(option_chain: pd.DataFrame, probs: np.ndarray):
+    bins = option_chain['strike_price'].to_numpy()[::2]
+    x = bins[:-1] + 1
+    weights = probs[1:-1]  # Exclude edge probabilities since these do not fit in histogram
+    n, bins, patches = plt.hist(x=x, bins=bins, weights=weights, edgecolor='k')
+    plt.xticks(bins)
+    plt.xlabel('Strike Price ($)')
+    plt.ylabel('Probability')
+    plt.show()
+    pass
+
+
 if __name__ == "__main__":
-    build_model(debug=True)
+    option_chain = util.get_dummy_option_data()
+    probabilities = build_model(option_chain, debug=False)
+    plot_pd(option_chain, probabilities)
+
