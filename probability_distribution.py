@@ -30,7 +30,7 @@ def build_model(option_chain: pd.DataFrame, debug=False) -> np.ndarray:
     while i > 0:
         p_between = calc_call_prob(calls=calls, p_above=p_above, long_index=i-2, short_index=i, debug=debug)
         p_above += p_between
-        call_probabilities.append(p_above)
+        call_probabilities.append(p_between)
         i -= 2
     call_probabilities.reverse()
     return np.array(put_probabilities + call_probabilities) * 100
