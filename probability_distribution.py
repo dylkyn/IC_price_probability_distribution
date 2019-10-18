@@ -92,16 +92,25 @@ def plot_pd(option_chain: pd.DataFrame, probs: np.ndarray):
     bins = option_chain['strike_price'].to_numpy()[::2]
     x = bins[:-1] + 1
     weights = probs[1:-1]  # Exclude edge probabilities since these do not fit in histogram
-    n, bins, patches = plt.hist(x=x, bins=bins, weights=weights, edgecolor='k')
+
+    counts, bins, patches = plt.hist(x=x, bins=bins, weights=weights, edgecolor='k')
+
+    for patch in patches:
+        height = patch.get_height()
+        plt.text(patch.get_x() + patch.get_width() / 2., 1. * height,
+                 "{0:.1f}%".format(height), ha='center', va='bottom')
+
     plt.xticks(bins)
     plt.xlabel('Strike Price ($)')
     plt.ylabel('Probability')
+    plt.title('Probability distribution for AAPL ($227.01) on 10/06/19 \n'
+              ' based on option chain expiring 10/11/19 with \n'
+              ' probability below = {}% and probability above = {}%'.format(probs[0], probs[-1]))
     plt.show()
-    pass
 
 
 if __name__ == "__main__":
     option_chain = util.get_dummy_option_data()
-    probabilities = build_model(option_chain, debug=False)
+    probabilities = build_model(option_chain, debug=True)
     plot_pd(option_chain, probabilities)
 
