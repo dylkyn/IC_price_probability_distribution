@@ -91,6 +91,7 @@ def plot_pd(option_chain: pd.DataFrame, probs: np.ndarray):
 
     counts, bins, patches = plt.hist(x=x, bins=bins, weights=weights, edgecolor='k')
 
+    # Add probability above each bar
     for patch in patches:
         height = patch.get_height()
         plt.text(patch.get_x() + patch.get_width() / 2., 1. * height,
