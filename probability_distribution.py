@@ -10,12 +10,10 @@ def build_model(option_chain: pd.DataFrame, debug=False) -> np.ndarray:
     puts = option_chain[['strike_price', 'put_price']].dropna()
     p_below = 0.02  # Guess for probability of stock being below lowest strike put
     put_probabilities = [p_below]
-    i = 0
-    while i < puts.shape[0] - 2:
-        p_between = calc_put_prob(puts=puts, p_below=p_below, short_index=i, long_index=i+2, debug=debug)
+    for i in range(puts.shape[0] - 1):
+        p_between = calc_put_prob(puts=puts, p_below=p_below, short_index=i, long_index=i+1, debug=debug)
         p_below += p_between
         put_probabilities.append(p_between)
-        i += 2
 
     if debug:
         print('-------------------------------------------------')
@@ -26,12 +24,10 @@ def build_model(option_chain: pd.DataFrame, debug=False) -> np.ndarray:
     call_probabilities = [p_above]
     # Start at the bottom of the array since we guess probability above instead of using previously calculated
     # p_below to reduce effect of initial p_below guess error
-    i = calls.shape[0] - 1
-    while i > 0:
-        p_between = calc_call_prob(calls=calls, p_above=p_above, long_index=i-2, short_index=i, debug=debug)
+    for i in range(calls.shape[0] - 1, 0, -1):
+        p_between = calc_call_prob(calls=calls, p_above=p_above, long_index=i-1, short_index=i, debug=debug)
         p_above += p_between
         call_probabilities.append(p_between)
-        i -= 2
     call_probabilities.reverse()
     return np.array(put_probabilities + call_probabilities) * 100
 
@@ -89,7 +85,7 @@ def calc_call_prob(calls: pd.DataFrame, p_above: float, long_index: int, short_i
 
 
 def plot_pd(option_chain: pd.DataFrame, probs: np.ndarray):
-    bins = option_chain['strike_price'].to_numpy()[::2]
+    bins = option_chain['strike_price'].to_numpy()
     x = bins[:-1] + 1
     weights = probs[1:-1]  # Exclude edge probabilities since these do not fit in histogram
 
@@ -110,7 +106,8 @@ def plot_pd(option_chain: pd.DataFrame, probs: np.ndarray):
 
 
 if __name__ == "__main__":
-    option_chain = util.get_dummy_option_data()
+    raw_option_chain = util.get_dummy_option_data()
+    option_chain = raw_option_chain[::2]
     probabilities = build_model(option_chain, debug=True)
     plot_pd(option_chain, probabilities)
 
