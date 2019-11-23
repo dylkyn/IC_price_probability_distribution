@@ -8,7 +8,7 @@ import util
 def build_model(option_chain: pd.DataFrame, debug=False) -> np.ndarray:
     # PUTS
     puts = option_chain[['strike_price', 'put_price']].dropna()
-    p_below = 0.02  # Guess for probability of stock being below lowest strike put
+    p_below = 0.007  # Guess for probability of stock being below lowest strike put
     put_probabilities = [p_below]
     for i in range(puts.shape[0] - 1):
         p_between = calc_put_prob(puts=puts, p_below=p_below, short_index=i, long_index=i+1, debug=debug)
@@ -20,7 +20,7 @@ def build_model(option_chain: pd.DataFrame, debug=False) -> np.ndarray:
 
     # CALLS
     calls = option_chain[['strike_price', 'call_price']].dropna()
-    p_above = 0.001  # Guess for probability of stock being above highest strike call
+    p_above = 0.0009  # Guess for probability of stock being above highest strike call
     call_probabilities = [p_above]
     # Start at the bottom of the array since we guess probability above instead of using previously calculated
     # p_below to reduce effect of initial p_below guess error
@@ -102,13 +102,12 @@ def plot_pd(option_chain: pd.DataFrame, probs: np.ndarray):
     plt.ylabel('Probability')
     plt.title('Probability distribution for AAPL ($227.01) on 10/06/19 \n'
               ' based on option chain expiring 10/11/19 with \n'
-              ' probability below = {}% and probability above = {}%'.format(probs[0], probs[-1]))
+              ' probability below = {}% and probability above = {}%'.format(probs[0].round(4), probs[-1]))
     plt.show()
 
 
 if __name__ == "__main__":
-    raw_option_chain = util.get_dummy_option_data()
-    option_chain = raw_option_chain[::2]
+    spot_price, raw_option_chain = util.get_option_data(ticker='AAPL', expiration_date='2019-11-29')
+    option_chain = util.preprocces_data(spot_price, raw_option_chain)
     probabilities = build_model(option_chain, debug=True)
     plot_pd(option_chain, probabilities)
-
