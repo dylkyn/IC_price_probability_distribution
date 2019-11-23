@@ -56,18 +56,24 @@ def get_option_data(ticker: str, expiration_date: str) -> (float, pd.DataFrame):
     return stock_price, df
 
 
-def get_dummy_option_data() -> pd.DataFrame:
+def preprocces_data(price: float, df: pd.DataFrame) -> pd.DataFrame:
     """
-    Returns a pandas data frame with the AAPL option chain expiring 10/11/19.
-    At the time of creation (10/06/19), AAPL price is 227.01.
-    col1 = strike price
-    col2 = call price
-    col3 = put price
+    :param price: spot price for ticker
+    :param df: raw option chain
+    :return: dataframe for use with model
     """
-    contracts = {'strike_price': [207.5 + 2.5 * x for x in range(17)],
-                 'call_price': [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,
-                                2.82, 1.7, .92, .47, .25, .15, .11, .06, .06],
-                 'put_price': [.2, .27, .37, .5, .7, 1.01, 1.53, 2.19, 3.25,
-                               np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]}
-    df = pd.DataFrame(contracts, columns=['strike_price', 'call_price', 'put_price'])
-    return df
+    distance_from_spot = 0.125
+    lower_limit = price * (1 - distance_from_spot)
+    upper_limit = price * (1 + distance_from_spot)
+    df = df[df['strike_price'].between(lower_limit, upper_limit)]
+    dif = df.iloc[1]['strike_price'] - df.iloc[0]['strike_price']
+    df.loc[df['strike_price'] <= price - dif / 2, 'call_price'] = np.nan
+    df.loc[df['strike_price'] > price + dif / 2, 'put_price'] = np.nan
+    # If either the lower or upper dfs have an odd number of rows, remove the outermost
+    # element so that the model can build spreads with every other row.
+    if df[df['call_price'] > 0].shape[0] % 2 == 0:
+        df = df[:-1]
+    if df[df['put_price'] > 0].shape[0] % 2 == 0:
+        df = df[1:]
+    # Return every other row
+    return df[::2]
